@@ -76,12 +76,35 @@ function startUpload(fileStream) {
     onProgress(bytesUploaded) {
       progressBox.textContent = `Uploaded ${bytesUploaded} bytes so far.`;
     },
-    onSuccess() {
-      // fetch(`http://localhost:8080/files/merge?counselSessionId=${encodeURIComponent(counselSessionIdInput.value)}`);
-      const li = document.createElement("li");
-      li.className = "list-group-item";
-      li.textContent = `✅ Upload completed: audio.webm`;
-      uploadList.appendChild(li);
+    async onSuccess() {
+      try {
+        const downloadUrl = upload.url;
+
+        // 인증 헤더를 포함한 fetch로 Blob 요청
+        const response = await fetch(downloadUrl, {
+          headers: {
+            Authorization: tokenInput.value,
+          },
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+
+        const li = document.createElement("li");
+        li.className = "list-group-item";
+        li.innerHTML = `
+          ✅ Upload completed: audio.webm
+          <br/>
+          <audio controls src="${audioUrl}"></audio>
+        `;
+        uploadList.appendChild(li);
+      } catch (error) {
+        console.error("Download/playback error:", error);
+        alert("Upload succeeded but playback failed.");
+      }
+
       reset();
     },
   };
